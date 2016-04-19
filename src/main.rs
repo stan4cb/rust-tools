@@ -13,31 +13,19 @@ fn main()
 
         let mut id3 = ID3::new();
 
-        let mut file = File::open(file_name).unwrap();
 
-        id3.fill_from_file(& mut file);
-
-        println!("Is it ID3 file -> {}", id3.is_id3());
-        println!("Version is {:?}", id3.version );
-
-        /*match File::open(file_name) {
-            Ok(mut file) => print!("Is it ID3 file -> {}", validate(&mut file)),
+        match File::open(file_name)
+        {
+            Ok(mut file) =>
+            {
+                    id3.fill_from_file(& mut file);
+                    println!("Is it ID3 file -> {}", id3.is_id3());
+                    println!("Version is {:?}", id3.version );
+            },
             Err(e) => println!("{}" , e),
-        }*/
+        }
     }
 }
-
-/*
-fn validate(file: & mut File) -> bool
-{
-    let mut buf = [0u8;3];
-
-    return match file.read_exact(&mut buf)
-    {
-        Ok(_) => String::from_utf8(buf.iter().cloned().collect()).unwrap() == "ID3",
-        Err(_) => false,
-    };
-}*/
 
 struct ID3 {
     id_header : [u8;3],
