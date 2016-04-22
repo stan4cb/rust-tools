@@ -1,16 +1,20 @@
-use std::fs::File;
+use std::fs::*;
 use std::io::Read;
+use std::io::Write;
 
 use std::env;
 
 struct ID3 {
-    file_size : usize,
-    id_header : [u8;3],
+    id3: bool,
+    version: (u8, u8),
 
-    title : [u8;30],
-    artist : [u8;30],
+    artist: String,
+    album: String,
+    title: String,
 
-    version : (u8, u8)
+    track: u8,
+
+    folder_name: String
 }
 
 fn main() {
@@ -26,17 +30,18 @@ fn main() {
 
                 match file.read_to_end(& mut whole_file){
                     Ok(f_size) => {
-                        println!("File size for '{}' is : {} b", file_name ,f_size );
+                        println!("File size for '{}' is : {} B", file_name ,f_size );
 
-                        let mut id3 = ID3::new(f_size);
+                        let mut id3 = ID3::new();
 
-                        id3.from_vec(& mut whole_file);
-
-                        //id3.from_file(& mut file);
+                        id3.from_vec(& mut whole_file, f_size);
 
                         if id3.is_id3() {
                             print!("ID3 -> ");
                             id3.info();
+
+                            id3.create_folders();
+                            id3.write_file(&whole_file);
                         }
                         else {
                             println!("Not ID3");
@@ -52,40 +57,63 @@ fn main() {
 
 #[allow(dead_code)]
 impl ID3 {
-    pub fn new(file_size : usize) -> ID3 {
-        ID3 { file_size : file_size ,id_header: [0u8;3] , title: [0u8;30], artist: [0u8;30], version : (0,0) }
+    pub fn new() -> ID3 {
+        ID3 { version : (0,0), id3 : false, artist : String::new(), album : String::new(), title : String::new(), track : 0, folder_name : String::new() }
     }
 
     pub fn info(&self) {
         println!("Version is {}.{}", self.version.0, self.version.1);
 
-        println!("\tArtist is -> {}", String::from_utf8(self.artist.iter().cloned().collect()).unwrap());
-        println!("\tTitle is -> {}", String::from_utf8(self.title.iter().cloned().collect()).unwrap());
+        println!("\tArtist is -> {}", self.artist);
+        println!("\tAlbum is  -> {}", self.album);
+        println!("\tTitle is  -> {}", self.title);
+        println!("\tTrack is  -> {}", self.track);
     }
 
-    pub fn from_vec(& mut self,vec: & mut Vec<u8>){
-        for i in 0 .. 3 {
-            self.id_header[i] = vec[i];
+    pub fn create_folders(& mut self){
+        self.folder_name = format!("Music_Lib/{}/{}", self.artist.replace(" ",""), self.album.replace(" ",""));
+
+        match create_dir_all(&self.folder_name){
+            Ok(_) => println!("Path created : {}", self.folder_name),
+            Err(e) => println!("{}", e),
         }
-
-        copy_from_vec(& mut self.id_header, vec, 0, 3);
-        copy_from_vec(& mut self.title, vec, self.file_size - 125, 30);
-        copy_from_vec(& mut self.artist, vec, self.file_size - 95, 30);
-
-        self.version = (vec[3], vec[4]);
     }
 
-    pub fn from_file(& mut self,file: & mut File) {
-        let mut v_buff = [0u8;2];
+    pub fn write_file(& mut self, vec: & Vec<u8>){
+        let file_name = format!("{}/{} {}.mp3", self.folder_name, self.track,self.title.replace(" ",""));
 
-        file.read_exact(& mut self.id_header).unwrap();
-        file.read_exact(& mut v_buff).unwrap();
+        match File::create(&file_name) {
+            Ok(mut file) => {
+                println!("File create done at : {}", &file_name);
+                file.write_all(vec.as_slice()).unwrap();
+            }
+            Err(e) => println!("File create error {}", e),
+        }
+    }
 
-        self.version = (v_buff[0], v_buff[1]);
+    pub fn from_vec(& mut self,vec: & mut Vec<u8>, size: usize){
+        let mut header = [0u8;3];
+
+        let mut artist = [0u8;30];
+        let mut album  = [0u8;30];
+        let mut title  = [0u8;30];
+
+        copy_from_vec(& mut header, vec, 0, 3);
+        copy_from_vec(& mut artist, vec, size - 95, 30);
+        copy_from_vec(& mut album, vec, size - 65, 30);
+        copy_from_vec(& mut title, vec, size - 125, 30);
+
+        self.id3 = String::from_utf8(header.iter().cloned().collect()).unwrap() == "ID3";
+        self.version = (vec[3], vec[4]);
+        self.track = vec[size - 2];
+
+        self.artist = String::from_utf8(artist.iter().cloned().collect()).unwrap();
+        self.album = String::from_utf8(album.iter().cloned().collect()).unwrap();
+        self.title = String::from_utf8(title.iter().cloned().collect()).unwrap();
     }
 
     pub fn is_id3(& mut self) -> bool {
-         String::from_utf8(self.id_header.iter().cloned().collect()).unwrap() == "ID3"
+         self.id3
     }
 }
 
