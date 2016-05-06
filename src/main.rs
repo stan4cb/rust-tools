@@ -87,7 +87,7 @@ impl ID3 {
                 println!("File create done at : {}", &file_name);
                 file.write_all(vec.as_slice()).unwrap();
             }
-            Err(e) => println!("File create error {}", e),
+            Err(e) => println!("File create error : {}", e),
         }
     }
 
