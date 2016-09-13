@@ -18,7 +18,7 @@ fn main()
     }
 }
 
-fn is_id3(file: & mut File) -> bool
+fn is_id3(file: & mut File) -> bool // need to read not from the start, but from the end
 {
     let mut buf = [0u8;3];
 
