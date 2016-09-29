@@ -12,8 +12,6 @@ const MAX: usize = 30;
 
 fn main() {
     let mut args = env::args();
-    let io = std::io::stdin();
-    let mut stdout = std::io::stdout();
 
     if args.len() > 2 {
         let param: String = args.nth(1).unwrap();
@@ -41,22 +39,12 @@ fn main() {
                         };
                     }
 
-                    print!("Edit All album | artist anything else to end : ");
-
-                    let mut io_string = String::new();
-
-                    let _ = stdout.flush();
-                    io.read_line(&mut io_string).unwrap();
-
-
-                    let x = io_string.clone();
+                    let x = tools::prompt("Edit All album | artist anything else to end : ");
                     let target_field = x.lines()
                         .nth(0)
                         .unwrap();
 
-                    io_string = String::new();
-                    io.read_line(&mut io_string).unwrap();;
-
+                    let io_string = tools::prompt("Enter new value : ");
                     let mut new_name: String = io_string.clone();
 
                     if io_string.len() > MAX {
