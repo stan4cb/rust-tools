@@ -1,5 +1,5 @@
 use std::fs::*;
-use std::io::{Read , Write};
+use std::io::{Read, Write};
 
 use std::env;
 use std::path::Path;
@@ -37,44 +37,39 @@ fn main() {
                     }
 
                     for song in id3_vec {
-                        match File::open(&song.folder_name) {
-                            Ok(mut file) => {
-                                let mut whole_file = Vec::new();
-                                match file.read_to_end(&mut whole_file) {
-                                    Ok(size) => {
-                                        // wierd stuff -> input includes new_line
-                                        let mut bytes: Vec<u8> = new_name.lines()
-                                            .nth(0)
-                                            .unwrap()
-                                            .to_owned()
-                                            .clone()
-                                            .into_bytes();
+                        let mut file = File::open(&song.folder_name).expect("file open error");
+                        let mut whole_file = Vec::new();
 
-                                        while bytes.len() <= MAX {
-                                            // fill the MAX
-                                            bytes.push(' ' as u8);
-                                        }
+                        let size = file.read_to_end(&mut whole_file).expect("file read error");
 
-                                        let b_pos = match target_field {
-                                            "artist" => 95,
-                                            "album" => 65,
-                                            _ => panic!("album or artist"),
-                                        };
 
-                                        tools::copy_from_vecv(&mut whole_file,
-                                                       &bytes,
-                                                       0,
-                                                       bytes.len(),
-                                                       size - b_pos);
+                        // wierd stuff -> input includes new_line
+                        let mut bytes: Vec<u8> = new_name.lines()
+                            .nth(0)
+                            .unwrap()
+                            .to_owned()
+                            .clone()
+                            .into_bytes();
 
-                                        if tools::write_file(&song.folder_name, &whole_file) {
-                                            println!("Saved to {}", &song.folder_name);
-                                        }
-                                    }
-                                    Err(e) => println!("File reading error {}", e),
-                                }
-                            }
-                            Err(e) => println!("File error {}", e),
+                        while bytes.len() <= MAX {
+                            // fill the MAX
+                            bytes.push(' ' as u8);
+                        }
+
+                        let b_pos = match target_field {
+                            "artist" => 95,
+                            "album" => 65,
+                            _ => panic!("album or artist"),
+                        };
+
+                        tools::copy_from_vecv(&mut whole_file,
+                                              &bytes,
+                                              0,
+                                              bytes.len(),
+                                              size - b_pos);
+
+                        if tools::write_vec_u8(&song.folder_name, &whole_file) {
+                            println!("Saved to {}", &song.folder_name);
                         }
                     }
                 }
@@ -87,23 +82,23 @@ fn main() {
     }
 }
 
-fn analize_folder(folder: &Path, data : &mut Vec<id3::ID3>) {
-                    for music in read_dir(&folder).unwrap() {
-                        match music {
-                            Ok(m) => {
-                                let path = m.path();
-                                if path.extension().unwrap() == "mp3" {
-                                    let c_song = analize_file(path.as_path());
-                                    c_song.info();
+fn analize_folder(folder: &Path, data: &mut Vec<id3::ID3>) {
+    for music in read_dir(&folder).unwrap() {
+        match music {
+            Ok(m) => {
+                let path = m.path();
+                if path.extension().unwrap() == "mp3" {
+                    let c_song = analize_file(path.as_path());
+                    c_song.info();
 
-                                    if c_song.is_id3() {
-                                        data.push(c_song);
-                                    }
-                                }
-                            }
-                            Err(e) => println!("Error : {}", e),
-                        };
+                    if c_song.is_id3() {
+                        data.push(c_song);
                     }
+                }
+            }
+            Err(e) => println!("Error : {}", e),
+        };
+    }
 }
 
 fn analize_file(file_name: &Path) -> id3::ID3 {

@@ -82,13 +82,13 @@ impl ID3 {
         tools::copy_from_vec(&mut album, vec, size - 65, 30);
         tools::copy_from_vec(&mut title, vec, size - 125, 30);
 
-        self.id3 = String::from_utf8(header.iter().cloned().collect()).unwrap() == "ID3";
+        self.id3     = String::from_utf8(header.iter().cloned().collect()).unwrap() == "ID3";
         self.version = (vec[3], vec[4]);
-        self.track = vec[size - 2];
+        self.track   = vec[size - 2];
 
         self.artist = String::from_utf8(artist.iter().cloned().collect()).unwrap();
-        self.album = String::from_utf8(album.iter().cloned().collect()).unwrap();
-        self.title = String::from_utf8(title.iter().cloned().collect()).unwrap();
+        self.album  = String::from_utf8(album.iter().cloned().collect()).unwrap();
+        self.title  = String::from_utf8(title.iter().cloned().collect()).unwrap();
     }
 
     pub fn is_id3(&self) -> bool {

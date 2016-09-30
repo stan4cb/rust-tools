@@ -31,10 +31,11 @@ pub fn write_vec_u8(file_name: &String, vec: &Vec<u8>) -> bool {
     };
 }
 
-pub fn prompt(ask: &str) -> String {
-    let s_in = io::stdin();
+pub fn prompt(ask : &str) -> String
+{
+    let s_in      = io::stdin();
     let mut s_out = io::stdout();
-    let mut res = String::new();
+    let mut res   = String::new();
 
     s_out.write_all(ask.as_bytes()).unwrap();
     s_out.flush().unwrap();
