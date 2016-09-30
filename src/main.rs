@@ -1,6 +1,5 @@
 use std::fs::*;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Read , Write};
 
 use std::env;
 use std::path::Path;
@@ -22,24 +21,9 @@ fn main() {
                 if Path::new(&f_name).is_dir() {
                     let mut id3_vec: Vec<id3::ID3> = vec![];
 
-                    for music in read_dir(&f_name).unwrap() {
-                        match music {
-                            Ok(m) => {
-                                let path = m.path();
-                                if path.extension().unwrap() == "mp3" {
-                                    let c_song = analize_file(path.as_path());
-                                    c_song.info();
+                    analize_folder(&Path::new(&f_name), &mut id3_vec);
 
-                                    if c_song.is_id3() {
-                                        id3_vec.push(c_song);
-                                    }
-                                }
-                            }
-                            Err(e) => println!("Error : {}", e),
-                        };
-                    }
-
-                    let x = tools::prompt("Edit All album | artist anything else to end : ");
+                    let x = tools::prompt("Edit All 'album' | 'artist' anything else to end : ");
                     let target_field = x.lines()
                         .nth(0)
                         .unwrap();
@@ -101,6 +85,25 @@ fn main() {
     } else {
         println!("Enter params : .exe (file | folder)  name");
     }
+}
+
+fn analize_folder(folder: &Path, data : &mut Vec<id3::ID3>) {
+                    for music in read_dir(&folder).unwrap() {
+                        match music {
+                            Ok(m) => {
+                                let path = m.path();
+                                if path.extension().unwrap() == "mp3" {
+                                    let c_song = analize_file(path.as_path());
+                                    c_song.info();
+
+                                    if c_song.is_id3() {
+                                        data.push(c_song);
+                                    }
+                                }
+                            }
+                            Err(e) => println!("Error : {}", e),
+                        };
+                    }
 }
 
 fn analize_file(file_name: &Path) -> id3::ID3 {
