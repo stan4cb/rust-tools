@@ -19,10 +19,6 @@ fn main() {
         match param.as_ref() {
             "folder" => {
                 if Path::new(&f_name).is_dir() {
-                    let mut id3_vec: Vec<id3::ID3> = vec![];
-
-                    analize_folder(&Path::new(&f_name), &mut id3_vec);
-
                     let x = tools::prompt("Edit All 'album' | 'artist' anything else to end : ");
                     let target_field = x.lines()
                         .nth(0)
@@ -36,12 +32,11 @@ fn main() {
                         new_name = String::from(x);
                     }
 
-                    for song in id3_vec {
+                    for song in analize_folder(&Path::new(&f_name)) {
                         let mut file = File::open(&song.folder_name).expect("file open error");
                         let mut whole_file = Vec::new();
 
                         let size = file.read_to_end(&mut whole_file).expect("file read error");
-
 
                         // wierd stuff -> input includes new_line
                         let mut bytes: Vec<u8> = new_name.lines()
@@ -51,8 +46,7 @@ fn main() {
                             .clone()
                             .into_bytes();
 
-                        while bytes.len() <= MAX {
-                            // fill the MAX
+                        while bytes.len() <= MAX { // fill the MAX
                             bytes.push(' ' as u8);
                         }
 
@@ -77,12 +71,15 @@ fn main() {
             "file" => analize_file(Path::new(&f_name)).info(),
             _ => println!("Wrong param"),
         }
-    } else {
+    }
+    else {
         println!("Enter params : .exe (file | folder)  name");
     }
 }
 
-fn analize_folder(folder: &Path, data: &mut Vec<id3::ID3>) {
+fn analize_folder(folder: &Path) -> Vec<id3::ID3> {
+    let mut data : Vec<id3::ID3> = vec![];
+
     for music in read_dir(&folder).unwrap() {
         match music {
             Ok(m) => {
@@ -99,6 +96,8 @@ fn analize_folder(folder: &Path, data: &mut Vec<id3::ID3>) {
             Err(e) => println!("Error : {}", e),
         };
     }
+
+    return data;
 }
 
 fn analize_file(file_name: &Path) -> id3::ID3 {
