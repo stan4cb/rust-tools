@@ -1,5 +1,5 @@
 use std::fs::*;
-use std::io::{Read, Write};
+use std::io::{Read, Write, Seek, SeekFrom};
 
 use std::env;
 use std::path::Path;
@@ -46,7 +46,8 @@ fn main() {
                             .clone()
                             .into_bytes();
 
-                        while bytes.len() <= MAX { // fill the MAX
+                        while bytes.len() <= MAX {
+                            // fill the MAX
                             bytes.push(' ' as u8);
                         }
 
@@ -71,14 +72,13 @@ fn main() {
             "file" => analize_file(Path::new(&f_name)).info(),
             _ => println!("Wrong param"),
         }
-    }
-    else {
+    } else {
         println!("Enter params : .exe (file | folder)  name");
     }
 }
 
 fn analize_folder(folder: &Path) -> Vec<id3::ID3> {
-    let mut data : Vec<id3::ID3> = vec![];
+    let mut data: Vec<id3::ID3> = vec![];
 
     for music in read_dir(&folder).unwrap() {
         match music {
@@ -100,19 +100,52 @@ fn analize_folder(folder: &Path) -> Vec<id3::ID3> {
     return data;
 }
 
+fn is_id3(f: &mut File) -> bool {
+    match f.seek(SeekFrom::Start(0)) {
+        Ok(_) => {
+            let mut buffer: [u8; 3] = [0u8; 3];
+            let id3_header: [u8; 3] = [73, 68, 51];
+
+            match f.read_exact(&mut buffer) {
+                Ok(_) => {
+                    if buffer == id3_header {
+                        return true;
+                    }
+                }
+                Err(e) => println!("file read error {}", e),
+            };
+        }
+        Err(e) => println!("seek error {}", e),
+    }
+
+    return false;
+}
+
 fn analize_file(file_name: &Path) -> id3::ID3 {
     let mut id3 = id3::ID3::new();
 
     match File::open(&file_name) {
         Ok(mut file) => {
-            let mut whole_file = Vec::new();
+            if is_id3(&mut file) {
+                let mut x : [u8;2] = [0u8;2];
+                file.read_exact(&mut x);
+                id3.version = (x[0], x[1]);
 
-            match file.read_to_end(&mut whole_file) {
-                Ok(f_size) => {
-                    id3.from_vec(&mut whole_file, f_size);
-                    id3.folder_name = file_name.to_string_lossy().into_owned();
+                match file.seek(SeekFrom::End(-125)) {
+                    Ok(res) => {
+                        let mut a: [u8; 30] = [0u8; 30];
+
+                        file.read_exact(&mut a);
+                        id3.title = String::from_utf8(a.iter().cloned().collect()).unwrap();
+
+                        file.read_exact(&mut a);
+                        id3.artist = String::from_utf8(a.iter().cloned().collect()).unwrap();
+
+                        file.read_exact(&mut a);
+                        id3.album = String::from_utf8(a.iter().cloned().collect()).unwrap();
+                    }
+                    Err(e) => println!("File reading error {}", e),
                 }
-                Err(e) => println!("File reading error {}", e),
             }
         }
         Err(e) => println!("File error {}", e),
